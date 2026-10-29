@@ -358,7 +358,6 @@
 <div class="toast" id="toast"></div>
 
 <script id="preset" type="application/json">{"version":2,"classes":[{"id":"c901","name":"901班","students":["陈俊桦","杨馨","张晴","张仕煌","张建辉","张琪思","古广勇","陈紫乐","王嘉愉","李俊杰","张艺涛","古轩","陈文雯","李雨露","张铭洪","陈奎龙","陈秋怡","陈炫锋","杨星涛","张少宗","张艺馨","刘俊灵","黄馨","胡先浪","李俊威","张俊彪","胡源城","陈怡霖","陈党贤","古佳雨","李坤灵","张达良","陈童慧","张壕","李梓薇","张睿","赖雨馨","陈子瑶","陈欣怡","朱佳琪","陈晓玲","古依依","古嘉豪","陈燕娟","张依娜","胡子琦","张馨怡","汤依凌","冯锦烽","陈晓璐","李瑶","邱莹莹","陈舒妍","汤艳婷","胡泰增"]}],"activeId":"c901","settings":{"sound":true,"noRepeat":true,"pin":""}}</script>
-<script>window.__PRISTINE_HTML__ = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;</script>
 <script>
 (function () {
   "use strict";
@@ -964,13 +963,21 @@
   });
 
   /* ---------------- 启动 ---------------- */
-  if (IS_FILE) $("fileBanner").hidden = false;
-  refreshAll();
-  emptyStage();
-  if (!activeClass().students.length) {
-    $("hint").textContent = "还没有学生，请点击右上角「管理」添加";
+  function boot() {
+    if (IS_FILE) $("fileBanner").hidden = false;
+    refreshAll();
+    emptyStage();
+    if (!activeClass().students.length) {
+      $("hint").textContent = "还没有学生，请点击右上角「管理」添加";
+    }
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    setTimeout(boot, 0);
   }
 })();
 </script>
+<script>window.__PRISTINE_HTML__ = "<!DOCTYPE html>" + String.fromCharCode(10) + document.documentElement.outerHTML;</script>
 </body>
 </html>
