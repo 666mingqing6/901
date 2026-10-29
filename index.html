@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#080b1a">
+<title>随机点名 · 课堂互动</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='.55' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='45' font-size='38' font-family='sans-serif' font-weight='bold' text-anchor='middle' fill='%23070a18'%3E%E7%82%B9%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='.55' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%23f472b6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='45' font-size='38' font-family='sans-serif' font-weight='bold' text-anchor='middle' fill='%23070a18'%3E%E7%82%B9%3C/text%3E%3C/svg%3E">
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --bg:#070a18;
+    --card:rgba(255,255,255,.055);
+    --card-2:rgba(255,255,255,.085);
+    --line:rgba(255,255,255,.12);
+    --line-2:rgba(255,255,255,.22);
+    --text:#eef1ff;
+    --muted:#8d96b8;
+    --c1:#22d3ee;
+    --c2:#7c5cff;
+    --c3:#f472b6;
+    --grad:linear-gradient(135deg,#22d3ee 0%,#7c5cff 52%,#f472b6 100%);
+    --ok:#34d399;
+    --danger:#fb7185;
+    --r:18px;
+  }
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+    display:flex;flex-direction:column;overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55}
+  .b1{width:52vw;height:52vw;left:-12vw;top:-16vw;background:#1b2c8a;animation:float1 18s ease-in-out infinite}
+  .b2{width:46vw;height:46vw;right:-10vw;top:8vh;background:#5b21b6;animation:float2 22s ease-in-out infinite}
+  .b3{width:40vw;height:40vw;left:32vw;bottom:-18vw;background:#0e7490;animation:float3 26s ease-in-out infinite}
+  @keyframes float1{50%{transform:translate(6vw,5vh) scale(1.12)}}
+  @keyframes float2{50%{transform:translate(-7vw,7vh) scale(1.08)}}
+  @keyframes float3{50%{transform:translate(4vw,-6vh) scale(1.15)}}
+  .grain{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.05;
+    background-image:radial-gradient(rgba(255,255,255,.9) .5px,transparent .5px);background-size:3px 3px}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{position:relative;z-index:3;display:flex;align-items:center;justify-content:space-between;
+    gap:16px;padding:18px 26px 10px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:13px;min-width:0}
+  .logo{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+    background:var(--grad);color:#0a0d1c;font-weight:900;font-size:20px;
+    box-shadow:0 8px 26px rgba(124,92,255,.45)}
+  .brand h1{margin:0;font-size:19px;letter-spacing:.04em;font-weight:800}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--muted);letter-spacing:.02em}
+  .top-actions{display:flex;align-items:center;gap:10px}
+  select,input,textarea{font-family:inherit;color:var(--text);background:rgba(255,255,255,.07);
+    border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13.5px;outline:none;transition:.18s}
+  select{cursor:pointer;min-width:132px;appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%238d96b8' stroke-width='1.6' stroke-linecap='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+  select option{background:#11162b;color:#eef1ff}
+  select:focus,input:focus,textarea:focus{border-color:rgba(124,92,255,.7);box-shadow:0 0 0 3px rgba(124,92,255,.16)}
+  button{font-family:inherit;cursor:pointer;border:none;transition:.18s;font-size:13.5px}
+  .ghost{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:9px 14px}
+  .ghost:hover{background:var(--card-2);border-color:var(--line-2)}
+  .ghost.small{padding:7px 12px;font-size:12.5px;border-radius:10px}
+  .ghost.danger{color:#fda4af;border-color:rgba(251,113,133,.35)}
+  .ghost.danger:hover{background:rgba(251,113,133,.14)}
+  .icon{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;
+    background:var(--card);border:1px solid var(--line);color:var(--text);font-size:15px}
+  .icon:hover{background:var(--card-2)}
+
+  /* ---------- 舞台 ---------- */
+  .stage{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:26px;padding:0 22px;min-height:0}
+  .slots{display:flex;flex-wrap:wrap;gap:18px;justify-content:center;align-items:center;
+    max-width:min(1440px,94vw);max-height:100%}
+  .slot{position:relative;display:flex;align-items:center;justify-content:center;
+    padding:26px 54px;min-width:min(560px,86vw);min-height:clamp(150px,26vh,210px);
+    border-radius:30px;
+    background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.028));
+    border:1px solid var(--line);
+    box-shadow:0 26px 70px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.14);
+    backdrop-filter:blur(10px);overflow:hidden;transition:transform .3s}
+  .slot::after{content:"";position:absolute;inset:-40% -10% auto -10%;height:60%;
+    background:radial-gradient(60% 100% at 50% 0%,rgba(124,92,255,.35),transparent 70%);pointer-events:none}
+  .slot-name{position:relative;font-size:clamp(52px,10.5vw,132px);font-weight:900;letter-spacing:.07em;
+    line-height:1.15;white-space:nowrap;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 34px rgba(124,92,255,.5));transition:filter .2s}
+  .slots.multi .slot{min-width:auto;min-height:clamp(96px,16vh,132px);padding:14px 30px;border-radius:22px}
+  .slots.multi .slot-name{font-size:clamp(24px,4.2vw,56px);letter-spacing:.05em}
+  .slot.rolling .slot-name{filter:blur(2px) drop-shadow(0 0 22px rgba(34,211,238,.55));opacity:.92;
+    animation:jit .1s steps(2) infinite}
+  @keyframes jit{0%{transform:translateY(-2px) scale(1.01)}100%{transform:translateY(2px) scale(.99)}}
+  .slot.reveal{animation:pop .62s cubic-bezier(.16,1.3,.3,1)}
+  @keyframes pop{0%{transform:scale(.82);opacity:.4}55%{transform:scale(1.07)}100%{transform:scale(1)}}
+  .hint{position:relative;z-index:2;font-size:13px;color:var(--muted);letter-spacing:.06em;height:18px}
+
+  /* ---------- 底部控制 ---------- */
+  .dock{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;
+    gap:20px;padding:14px 26px 6px;flex-wrap:wrap}
+  .dock-left,.dock-right{display:flex;align-items:center;gap:14px}
+  .stepper{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:5px 8px;font-size:13px;color:var(--muted)}
+  .stepper button{width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.08);color:var(--text);
+    font-size:15px;line-height:1;display:grid;place-items:center}
+  .stepper button:hover{background:rgba(255,255,255,.16)}
+  .stepper b{color:var(--text);min-width:18px;text-align:center;font-size:14px}
+  .switch{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+  .switch input{appearance:none;width:38px;height:21px;border-radius:99px;background:rgba(255,255,255,.14);
+    position:relative;cursor:pointer;transition:.2s;flex:none}
+  .switch input::after{content:"";position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;
+    background:#fff;transition:.2s}
+  .switch input:checked{background:linear-gradient(135deg,#22d3ee,#7c5cff)}
+  .switch input:checked::after{transform:translateX(17px)}
+  .primary{background:var(--grad);color:#0a0d1c;font-weight:800;letter-spacing:.1em;
+    padding:14px 54px;border-radius:16px;font-size:16px;
+    box-shadow:0 14px 38px rgba(124,92,255,.42),inset 0 1px 0 rgba(255,255,255,.4)}
+  .primary:hover{transform:translateY(-2px);box-shadow:0 18px 46px rgba(124,92,255,.55)}
+  .primary:active{transform:translateY(0)}
+  .primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .primary.small{padding:9px 20px;font-size:13px;border-radius:11px;letter-spacing:.06em}
+  .muted{color:var(--muted);font-size:12.5px}
+
+  /* ---------- 历史 ---------- */
+  .history{position:relative;z-index:3;display:flex;align-items:center;gap:12px;
+    padding:6px 26px 18px;min-height:52px;overflow:hidden}
+  .history .label{flex:none;font-size:12.5px;color:var(--muted);letter-spacing:.05em}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;flex:1}
+  .chips::-webkit-scrollbar{height:5px}
+  .chips::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:9px}
+  .chip{flex:none;font-size:12.5px;padding:5px 11px;border-radius:99px;
+    background:rgba(124,92,255,.16);border:1px solid rgba(124,92,255,.32);color:#d9d4ff;
+    animation:chipIn .35s ease both}
+  @keyframes chipIn{from{opacity:0;transform:translateY(6px) scale(.9)}}
+
+  /* ---------- 弹层 ---------- */
+  .modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:20px;
+    background:rgba(4,6,16,.72);backdrop-filter:blur(8px);animation:fade .22s ease}
+  .modal[hidden]{display:none}
+  @keyframes fade{from{opacity:0}}
+  .modal-card{width:min(880px,96vw);max-height:88vh;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#121732,#0d1126);border:1px solid var(--line);
+    border-radius:22px;box-shadow:0 40px 100px rgba(0,0,0,.7);overflow:hidden;
+    animation:rise .28s cubic-bezier(.16,1,.3,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(18px) scale(.98)}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;
+    padding:18px 22px;border-bottom:1px solid var(--line);flex:none}
+  .modal-head h2{margin:0;font-size:16px;font-weight:800;letter-spacing:.04em}
+  .tabs{display:flex;gap:4px;padding:12px 18px 0;flex:none;flex-wrap:wrap}
+  .tab{background:transparent;color:var(--muted);padding:9px 15px;border-radius:11px 11px 0 0;
+    font-size:13.5px;border-bottom:2px solid transparent}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--text);background:rgba(255,255,255,.06);border-bottom-color:#7c5cff}
+  .tab-body{padding:18px 22px 22px;overflow:auto;flex:1}
+  .pane[hidden]{display:none}
+  .pane{display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .row.between{justify-content:space-between}
+  .tip{font-size:12px;color:var(--muted);margin:0;line-height:1.7}
+  .class-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .class-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;
+    display:flex;flex-direction:column;gap:8px;transition:.18s;cursor:pointer}
+  .class-card:hover{background:var(--card-2);border-color:var(--line-2)}
+  .class-card.active{border-color:rgba(124,92,255,.85);background:rgba(124,92,255,.14);
+    box-shadow:0 0 0 3px rgba(124,92,255,.12)}
+  .class-card .nm{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .class-card .nm .dot{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 8px #34d399}
+  .class-card .ct{font-size:12px;color:var(--muted)}
+  .class-card .ops{display:flex;gap:6px;margin-top:2px}
+  .mini{font-size:11.5px;padding:4px 9px;border-radius:8px;background:rgba(255,255,255,.08);
+    color:var(--muted);border:1px solid transparent;white-space:nowrap}
+  .mini:hover{color:var(--text);background:rgba(255,255,255,.16)}
+  textarea#rosterText{width:100%;height:280px;resize:vertical;line-height:1.9;font-size:14px;
+    letter-spacing:.03em;font-family:inherit}
+  .export-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;
+    display:flex;flex-direction:column;gap:8px}
+  .export-card h3{margin:0;font-size:14px;font-weight:800}
+  .export-card p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.75}
+  .file-btn{display:inline-flex;align-items:center;cursor:pointer}
+  #pinModal .modal-card{width:min(400px,92vw)}
+  #pinModal input{width:100%;text-align:center;letter-spacing:.4em;font-size:18px;padding:12px}
+  .toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,14px);z-index:60;
+    background:rgba(20,26,50,.96);border:1px solid var(--line-2);color:var(--text);
+    padding:11px 20px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:.28s;
+    box-shadow:0 16px 40px rgba(0,0,0,.55);max-width:80vw;text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  #fx{position:fixed;inset:0;z-index:30;pointer-events:none}
+  .banner{position:relative;z-index:3;margin:0 26px 8px;padding:8px 14px;border-radius:11px;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);color:#fcd34d;
+    font-size:12.5px;display:flex;align-items:center;gap:8px}
+  .banner[hidden]{display:none}
+  @media (max-width:720px){
+    .topbar{padding:14px 14px 6px;gap:10px}
+    .brand h1{font-size:16px}
+    .brand p{font-size:11.5px}
+    .logo{width:38px;height:38px;border-radius:12px;font-size:17px}
+    .top-actions{width:100%;justify-content:space-between;gap:8px}
+    .top-actions select{flex:1;min-width:0}
+    .banner{margin:0 14px 6px;font-size:11.5px;line-height:1.5}
+    .stage{padding:0 14px;gap:16px}
+    .slots{max-width:100%}
+    .slot{width:min(92vw,560px);min-width:0;padding:20px 16px;
+      min-height:clamp(112px,20vh,180px);border-radius:24px}
+    .slot-name{font-size:clamp(38px,11.5vw,74px);letter-spacing:.04em}
+    .slots.multi{gap:10px}
+    .slots.multi .slot{width:calc(50% - 5px);min-height:82px;padding:10px 10px;border-radius:16px}
+    .slots.multi .slot-name{font-size:clamp(20px,6vw,34px)}
+    .hint{font-size:12px}
+    .dock{flex-direction:column;gap:10px;padding:10px 14px 4px}
+    .dock-left{gap:10px;flex-wrap:wrap;justify-content:center}
+    .primary{width:100%;max-width:360px;padding:13px 20px;font-size:15px;letter-spacing:.06em}
+    .history{padding:4px 14px 12px}
+    .toast{bottom:150px;font-size:12.5px;padding:10px 16px}
+    .modal{padding:10px}
+    .modal-card{max-height:94vh}
+    .tab-body{padding:14px 16px 18px}
+    .tabs{padding:10px 12px 0}
+    textarea#rosterText{height:220px;font-size:13.5px}
+  }
+</style>
+</head>
+<body>
+<div class="bg"><span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span></div>
+<div class="grain"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">点</div>
+    <div>
+      <h1>随机点名</h1>
+      <p id="brandSub">—</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <select id="classSelect" title="选择班级"></select>
+    <button class="icon" id="btnFull" title="全屏（F）">⛶</button>
+    <button class="ghost" id="btnAdmin">管理</button>
+  </div>
+</header>
+
+<div class="banner" id="fileBanner" hidden>
+  <span>离线版：修改名单后请到「管理 → 导出」重新导出 HTML 保存</span>
+</div>
+
+<main class="stage">
+  <div class="slots" id="slots"></div>
+  <div class="hint" id="hint">按空格键或点击「开始点名」</div>
+</main>
+
+<footer class="dock">
+  <div class="dock-left">
+    <div class="stepper">
+      <span>抽取人数</span>
+      <button data-step="-1" aria-label="减少">−</button>
+      <b id="countVal">1</b>
+      <button data-step="1" aria-label="增加">+</button>
+    </div>
+    <label class="switch"><input type="checkbox" id="noRepeat"><span>不重复</span></label>
+    <button class="ghost small" id="btnReset">重置</button>
+  </div>
+  <button class="primary" id="btnGo">开始点名</button>
+  <div class="dock-right"><span class="muted" id="poolInfo">—</span></div>
+</footer>
+
+<section class="history">
+  <span class="label">已点名</span>
+  <div class="chips" id="historyList"></div>
+</section>
+
+<canvas id="fx"></canvas>
+
+<!-- 管理后台 -->
+<div class="modal" id="admin" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>管理后台</h2>
+      <button class="icon" id="closeAdmin" title="关闭">✕</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="classes">班级管理</button>
+      <button class="tab" data-tab="roster">学生名单</button>
+      <button class="tab" data-tab="export">导出 / 备份</button>
+      <button class="tab" data-tab="settings">设置</button>
+    </div>
+    <div class="tab-body">
+
+      <div class="pane" data-pane="classes">
+        <div class="class-list" id="classList"></div>
+        <div class="row">
+          <input id="newClassName" placeholder="新班级名称，如 902班" style="flex:1;min-width:160px">
+          <button class="primary small" id="addClass">添加班级</button>
+        </div>
+        <p class="tip">点击班级卡片可切换为当前班级；支持重命名与删除。班级数据保存在浏览器本地，导出离线 HTML 时会一并打包。</p>
+      </div>
+
+      <div class="pane" data-pane="roster" hidden>
+        <div class="row between">
+          <strong id="rosterTitle">学生名单</strong>
+          <span class="muted" id="rosterCount">0 人</span>
+        </div>
+        <textarea id="rosterText" spellcheck="false" placeholder="每行一个姓名"></textarea>
+        <div class="row">
+          <button class="primary small" id="saveRoster">保存名单</button>
+          <button class="ghost small" id="dedupeRoster">去重整理</button>
+          <button class="ghost small danger" id="clearRoster">清空</button>
+        </div>
+        <p class="tip">每行一个姓名；也支持用「、，, 空格 制表符」分隔，保存时自动拆分并去重。</p>
+      </div>
+
+      <div class="pane" data-pane="export" hidden>
+        <div class="export-card">
+          <h3>导出离线版 HTML</h3>
+          <p>把当前所有班级打包进单个 HTML 文件，双击即可使用，无需联网，可直接存 U 盘拷给其他老师。注意：离线版中修改名单后需重新导出才会保存。</p>
+          <div class="row"><button class="primary small" id="exportHtml">下载离线 HTML</button></div>
+        </div>
+        <div class="export-card">
+          <h3>数据备份</h3>
+          <p>导出 / 导入 JSON，便于在电脑之间迁移班级与名单。</p>
+          <div class="row">
+            <button class="ghost small" id="exportJson">导出 JSON</button>
+            <label class="ghost small file-btn">导入 JSON<input type="file" id="importJson" accept=".json,application/json" hidden></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" data-pane="settings" hidden>
+        <label class="row between"><span>点名音效</span><input type="checkbox" id="setSound" class="tgl"></label>
+        <label class="row between"><span>管理员密码（留空则不启用）</span>
+          <input id="setPin" placeholder="留空 = 不启用" style="width:180px;text-align:center"></label>
+        <div class="row">
+          <button class="primary small" id="saveSettings">保存设置</button>
+          <button class="ghost small danger" id="resetAll">恢复默认数据</button>
+        </div>
+        <p class="tip">密码仅用于防止误操作，属于前端校验，不具备真正的安全防护能力。</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 密码 -->
+<div class="modal" id="pinModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><h2>输入管理员密码</h2><button class="icon" id="closePin">✕</button></div>
+    <div class="tab-body">
+      <div class="pane">
+        <input id="pinInput" type="password" inputmode="numeric" placeholder="••••" autocomplete="off">
+        <div class="row"><button class="primary small" id="pinOk">进入后台</button></div>
+        <p class="tip">密码可在「管理 → 设置」中修改或清空。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script id="preset" type="application/json">{"version":2,"classes":[{"id":"c901","name":"901班","students":["陈俊桦","杨馨","张晴","张仕煌","张建辉","张琪思","古广勇","陈紫乐","王嘉愉","李俊杰","张艺涛","古轩","陈文雯","李雨露","张铭洪","陈奎龙","陈秋怡","陈炫锋","杨星涛","张少宗","张艺馨","刘俊灵","黄馨","胡先浪","李俊威","张俊彪","胡源城","陈怡霖","陈党贤","古佳雨","李坤灵","张达良","陈童慧","张壕","李梓薇","张睿","赖雨馨","陈子瑶","陈欣怡","朱佳琪","陈晓玲","古依依","古嘉豪","陈燕娟","张依娜","胡子琦","张馨怡","汤依凌","冯锦烽","陈晓璐","李瑶","邱莹莹","陈舒妍","汤艳婷","胡泰增"]}],"activeId":"c901","settings":{"sound":true,"noRepeat":true,"pin":""}}</script>
+<script>window.__PRISTINE_HTML__ = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;</script>
+<script>
+(function () {
+  "use strict";
+
+  var IS_FILE = location.protocol === "file:";
+  var KEY = "rollcall.v2";
+
+  var DEFAULT = {
+    version: 2,
+    classes: [{ id: "c901", name: "901班", students: [] }],
+    activeId: "c901",
+    settings: { sound: true, noRepeat: true, pin: "" }
+  };
+
+  /* ---------------- 数据 ---------------- */
+  function uid() { return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function normalize(d) {
+    var s = { version: 2, classes: [], activeId: "", settings: { sound: true, noRepeat: true, pin: "" } };
+    if (!d || typeof d !== "object") d = DEFAULT;
+    if (Array.isArray(d.classes)) {
+      d.classes.forEach(function (c) {
+        if (!c) return;
+        var name = String(c.name || "").trim();
+        if (!name) return;
+        var list = Array.isArray(c.students) ? c.students.map(function (n) { return String(n).trim(); }).filter(Boolean) : [];
+        s.classes.push({ id: c.id || uid(), name: name, students: list });
+      });
+    }
+    if (!s.classes.length) s.classes.push({ id: "c901", name: "901班", students: [] });
+    s.activeId = s.classes.some(function (c) { return c.id === d.activeId; }) ? d.activeId : s.classes[0].id;
+    var st = d.settings || {};
+    s.settings = { sound: st.sound !== false, noRepeat: st.noRepeat !== false, pin: String(st.pin || "") };
+    return s;
+  }
+
+  function readPreset() {
+    try { return JSON.parse(document.getElementById("preset").textContent); } catch (e) { return null; }
+  }
+
+  function load() {
+    if (!IS_FILE) {
+      try {
+        var raw = localStorage.getItem(KEY);
+        if (raw) return normalize(JSON.parse(raw));
+      } catch (e) { /* ignore */ }
+    }
+    return normalize(readPreset());
+  }
+
+  function save() {
+    if (IS_FILE) return;
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+
+  var state = load();
+  var history = {};        // { classId: [name, ...] }
+  var spinning = false;
+  var pickCount = 1;
+
+  /* ---------------- 工具 ---------------- */
+  function $(id) { return document.getElementById(id); }
+
+  function rnd(n) {
+    if (n <= 0) return 0;
+    if (window.crypto && window.crypto.getRandomValues) {
+      var a = new Uint32Array(1);
+      var lim = Math.floor(4294967296 / n) * n;
+      do { window.crypto.getRandomValues(a); } while (a[0] >= lim);
+      return a[0] % n;
+    }
+    return Math.floor(Math.random() * n);
+  }
+
+  function toast(msg) {
+    var t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  function activeClass() {
+    return state.classes.filter(function (c) { return c.id === state.activeId; })[0] || state.classes[0];
+  }
+
+  function histOf(id) {
+    if (!history[id]) history[id] = [];
+    return history[id];
+  }
+
+  function pool() {
+    var c = activeClass();
+    if (!state.settings.noRepeat) return c.students.slice();
+    var used = histOf(c.id);
+    return c.students.filter(function (n) { return used.indexOf(n) === -1; });
+  }
+
+  /* ---------------- 音效 ---------------- */
+  var actx = null;
+  function audio() {
+    if (!state.settings.sound) return null;
+    if (!actx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try { actx = new AC(); } catch (e) { return null; }
+    }
+    if (actx.state === "suspended") { try { actx.resume(); } catch (e) {} }
+    return actx;
+  }
+
+  function blip(freq, dur, vol, type) {
+    var ac = audio(); if (!ac) return;
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || "sine";
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, ac.currentTime);
+    g.gain.linearRampToValueAtTime(vol || 0.035, ac.currentTime + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + (dur || 0.06));
+    o.connect(g); g.connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + (dur || 0.06) + 0.02);
+  }
+
+  function fanfare() {
+    if (!state.settings.sound) return;
+    [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) {
+      setTimeout(function () { blip(f, 0.34, 0.06, "triangle"); }, i * 85);
+    });
+  }
+
+  /* ---------------- 彩带 ---------------- */
+  var fx = $("fx"), fxc = fx.getContext("2d");
+  var particles = [], fxRaf = null, dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resizeFx() {
+    fx.width = Math.floor(innerWidth * dpr);
+    fx.height = Math.floor(innerHeight * dpr);
+    fx.style.width = innerWidth + "px";
+    fx.style.height = innerHeight + "px";
+    fxc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resizeFx();
+  addEventListener("resize", resizeFx);
+
+  var COLORS = ["#22d3ee", "#7c5cff", "#f472b6", "#fbbf24", "#34d399", "#ffffff"];
+
+  function burst(cx, cy, count) {
+    for (var i = 0; i < count; i++) {
+      var ang = Math.random() * Math.PI * 2;
+      var sp = 3 + Math.random() * 9;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(ang) * sp,
+        vy: Math.sin(ang) * sp - 4,
+        w: 4 + Math.random() * 6,
+        h: 4 + Math.random() * 6,
+        rot: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.32,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        life: 1
+      });
+    }
+    if (!fxRaf) fxRaf = requestAnimationFrame(tickFx);
+  }
+
+  function tickFx() {
+    fxc.clearRect(0, 0, innerWidth, innerHeight);
+    for (var i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.vy += 0.22; p.vx *= 0.995; p.vy *= 0.995;
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      p.life -= 0.009;
+      if (p.life <= 0 || p.y > innerHeight + 60) { particles.splice(i, 1); continue; }
+      fxc.save();
+      fxc.globalAlpha = Math.max(0, p.life);
+      fxc.translate(p.x, p.y);
+      fxc.rotate(p.rot);
+      fxc.fillStyle = p.color;
+      fxc.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      fxc.restore();
+    }
+    if (particles.length) { fxRaf = requestAnimationFrame(tickFx); }
+    else { fxc.clearRect(0, 0, innerWidth, innerHeight); fxRaf = null; }
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  function renderClassSelect() {
+    var sel = $("classSelect");
+    sel.innerHTML = "";
+    state.classes.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name + "（" + c.students.length + "人）";
+      if (c.id === state.activeId) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function renderMeta() {
+    var c = activeClass();
+    $("brandSub").textContent = c.name + " · " + c.students.length + " 人";
+    var left = pool().length;
+    $("poolInfo").textContent = state.settings.noRepeat ? "剩余 " + left + " 人" : "共 " + c.students.length + " 人";
+    $("noRepeat").checked = state.settings.noRepeat;
+    $("countVal").textContent = pickCount;
+  }
+
+  function renderHistory() {
+    var box = $("historyList");
+    var used = histOf(activeClass().id);
+    box.innerHTML = "";
+    if (!used.length) {
+      box.innerHTML = '<span class="muted" style="font-size:12px">暂无记录</span>';
+      return;
+    }
+    used.slice().reverse().forEach(function (n) {
+      var s = document.createElement("span");
+      s.className = "chip";
+      s.textContent = n;
+      box.appendChild(s);
+    });
+  }
+
+  function emptyStage() {
+    var wrap = $("slots");
+    var c = activeClass();
+    wrap.className = "slots";
+    if (!c.students.length) {
+      wrap.innerHTML = '<div class="slot"><span class="slot-name">暂无学生</span></div>';
+      $("hint").textContent = "请点击右上角「管理」添加学生名单";
+    } else {
+      wrap.innerHTML = '<div class="slot"><span class="slot-name">准备好了吗</span></div>';
+      $("hint").textContent = "按空格键或点击「开始点名」";
+    }
+  }
+
+  function buildSlots(n) {
+    var wrap = $("slots");
+    wrap.className = "slots" + (n > 1 ? " multi" : "");
+    wrap.innerHTML = "";
+    var arr = [];
+    for (var i = 0; i < n; i++) {
+      var el = document.createElement("div");
+      el.className = "slot";
+      var sp = document.createElement("span");
+      sp.className = "slot-name";
+      sp.textContent = "?";
+      el.appendChild(sp);
+      wrap.appendChild(el);
+      arr.push(el);
+    }
+    return arr;
+  }
+
+  /* ---------------- 点名主流程 ---------------- */
+  function drawNames(n) {
+    var p = pool();
+    if (!p.length) return null;
+    var copy = p.slice(), out = [];
+    var k = Math.min(n, copy.length);
+    for (var i = 0; i < k; i++) {
+      out.push(copy.splice(rnd(copy.length), 1)[0]);
+    }
+    return out;
+  }
+
+  function spin() {
+    if (spinning) return;
+    var c = activeClass();
+    if (!c.students.length) { toast("当前班级还没有学生，请到「管理」中添加"); openAdmin("roster"); return; }
+
+    var winners = drawNames(pickCount);
+    if (!winners) { toast("名单已全部点完，请点「重置」或关闭「不重复」"); return; }
+
+    spinning = true;
+    $("btnGo").disabled = true;
+    $("hint").textContent = "抽取中…";
+
+    var slots = buildSlots(winners.length);
+    var names = c.students.slice();
+    var DUR = 2350;
+    var start = performance.now();
+    var last = 0;
+
+    slots.forEach(function (s) { s.classList.add("rolling"); });
+
+    function frame(now) {
+      var t = Math.min(1, (now - start) / DUR);
+      var interval = 42 + 460 * Math.pow(t, 3.1);
+      if (now - last >= interval) {
+        last = now;
+        slots.forEach(function (s) {
+          s.firstChild.textContent = names[rnd(names.length)];
+        });
+        blip(560 + Math.random() * 420, 0.035, 0.022, "square");
+      }
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        finish(slots, winners);
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function finish(slots, winners) {
+    slots.forEach(function (s, i) {
+      s.classList.remove("rolling");
+      s.firstChild.textContent = winners[i];
+      s.classList.add("reveal");
+    });
+    fanfare();
+
+    var rect = slots[0].getBoundingClientRect();
+    burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 90);
+    if (slots.length > 1) {
+      slots.slice(1).forEach(function (s) {
+        var r = s.getBoundingClientRect();
+        setTimeout(function () { burst(r.left + r.width / 2, r.top + r.height / 2, 45); }, 90);
+      });
+    }
+
+    var used = histOf(activeClass().id);
+    winners.forEach(function (n) { if (used.indexOf(n) === -1) used.push(n); });
+    renderHistory();
+    renderMeta();
+
+    spinning = false;
+    $("btnGo").disabled = false;
+    $("hint").textContent = "按空格键继续抽取";
+
+    setTimeout(function () {
+      slots.forEach(function (s) { s.classList.remove("reveal"); });
+    }, 700);
+  }
+
+  /* ---------------- 管理后台 ---------------- */
+  var pendingTab = "classes";
+
+  function openAdmin(tab) {
+    pendingTab = tab || "classes";
+    if (state.settings.pin) {
+      $("pinInput").value = "";
+      $("pinModal").hidden = false;
+      setTimeout(function () { $("pinInput").focus(); }, 60);
+    } else {
+      showAdmin();
+    }
+  }
+
+  function showAdmin() {
+    particles.length = 0;
+    $("pinModal").hidden = true;
+    $("admin").hidden = false;
+    switchTab(pendingTab);
+    renderClassList();
+    fillRoster();
+    $("setSound").checked = state.settings.sound;
+    $("setPin").value = state.settings.pin;
+  }
+
+  function switchTab(name) {
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+      t.classList.toggle("active", t.dataset.tab === name);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".pane"), function (p) {
+      p.hidden = p.dataset.pane !== name;
+    });
+    if (name === "roster") fillRoster();
+    if (name === "classes") renderClassList();
+  }
+
+  function renderClassList() {
+    var box = $("classList");
+    box.innerHTML = "";
+    state.classes.forEach(function (c) {
+      var el = document.createElement("div");
+      el.className = "class-card" + (c.id === state.activeId ? " active" : "");
+      el.innerHTML =
+        '<div class="nm">' + (c.id === state.activeId ? '<span class="dot"></span>' : "") +
+        '<span></span></div>' +
+        '<div class="ct">' + c.students.length + ' 名学生</div>' +
+        '<div class="ops"><button class="mini" data-act="use">设为当前</button>' +
+        '<button class="mini" data-act="rename">重命名</button>' +
+        '<button class="mini" data-act="del">删除</button></div>';
+      el.querySelector(".nm span:last-child").textContent = c.name;
+      el.addEventListener("click", function (e) {
+        var act = e.target.dataset && e.target.dataset.act;
+        if (act === "use") { state.activeId = c.id; save(); refreshAll(); renderClassList(); }
+        else if (act === "rename") {
+          var v = prompt("修改班级名称", c.name);
+          if (v && v.trim()) { c.name = v.trim(); save(); refreshAll(); renderClassList(); }
+        } else if (act === "del") {
+          if (state.classes.length <= 1) { toast("至少保留一个班级"); return; }
+          if (confirm("确定删除「" + c.name + "」？该班名单将一并删除。")) {
+            state.classes = state.classes.filter(function (x) { return x.id !== c.id; });
+            if (state.activeId === c.id) state.activeId = state.classes[0].id;
+            delete history[c.id];
+            save(); refreshAll(); renderClassList();
+          }
+        } else {
+          state.activeId = c.id; save(); refreshAll(); renderClassList();
+        }
+      });
+      box.appendChild(el);
+    });
+  }
+
+  function fillRoster() {
+    var c = activeClass();
+    $("rosterTitle").textContent = c.name + " · 学生名单";
+    $("rosterText").value = c.students.join("\n");
+    $("rosterCount").textContent = c.students.length + " 人";
+  }
+
+  function parseNames(text) {
+    var parts = String(text).split(/[\n\r,，、;；\t]+/);
+    var out = [], seen = {};
+    parts.forEach(function (p) {
+      p = p.replace(/\s+/g, "").trim();
+      if (!p) return;
+      if (seen[p]) return;
+      seen[p] = 1;
+      out.push(p);
+    });
+    return out;
+  }
+
+  /* ---------------- 导出 ---------------- */
+  function stamp() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + "_" + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  function download(content, name, mime) {
+    var blob = new Blob([content], { type: mime + ";charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 800);
+  }
+
+  function exportHtml() {
+    var json = JSON.stringify(state).replace(/</g, "\\u003c");
+    var html = window.__PRISTINE_HTML__ || "";
+    var re = /(<script id="preset" type="application\/json">)[\s\S]*?(<\/script>)/;
+    if (!re.test(html)) { toast("导出失败：模板未就绪，请刷新后重试"); return; }
+    html = html.replace(re, function (m, a, b) { return a + json + b; });
+    download(html, "随机点名_" + stamp() + ".html", "text/html");
+    toast("已导出，可直接双击离线使用");
+  }
+
+  /* ---------------- 刷新 ---------------- */
+  function refreshAll() {
+    renderClassSelect();
+    renderMeta();
+    renderHistory();
+  }
+
+  /* ---------------- 事件绑定 ---------------- */
+  $("classSelect").addEventListener("change", function (e) {
+    state.activeId = e.target.value;
+    save();
+    refreshAll();
+    emptyStage();
+    $("hint").textContent = "按空格键或点击「开始点名」";
+  });
+
+  $("btnGo").addEventListener("click", spin);
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-step]"), function (b) {
+    b.addEventListener("click", function () {
+      var d = parseInt(b.dataset.step, 10);
+      var max = Math.max(1, Math.min(12, activeClass().students.length || 12));
+      pickCount = Math.min(max, Math.max(1, pickCount + d));
+      $("countVal").textContent = pickCount;
+    });
+  });
+
+  $("noRepeat").addEventListener("change", function (e) {
+    state.settings.noRepeat = e.target.checked;
+    save(); renderMeta();
+  });
+
+  $("btnReset").addEventListener("click", function () {
+    history[activeClass().id] = [];
+    renderHistory(); renderMeta();
+    toast("已清空本班点名记录");
+  });
+
+  $("btnFull").addEventListener("click", function () {
+    if (!document.fullscreenElement) {
+      (document.documentElement.requestFullscreen || function () {}).call(document.documentElement);
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  $("btnAdmin").addEventListener("click", function () { openAdmin("classes"); });
+  $("closeAdmin").addEventListener("click", function () { $("admin").hidden = true; });
+  $("closePin").addEventListener("click", function () { $("pinModal").hidden = true; });
+  $("pinOk").addEventListener("click", function () {
+    if ($("pinInput").value === state.settings.pin) showAdmin();
+    else { toast("密码不正确"); $("pinInput").value = ""; }
+  });
+  $("pinInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") $("pinOk").click();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+    t.addEventListener("click", function () { switchTab(t.dataset.tab); });
+  });
+
+  $("addClass").addEventListener("click", function () {
+    var v = $("newClassName").value.trim();
+    if (!v) { toast("请输入班级名称"); return; }
+    var c = { id: uid(), name: v, students: [] };
+    state.classes.push(c);
+    state.activeId = c.id;
+    $("newClassName").value = "";
+    save(); refreshAll(); renderClassList(); switchTab("roster");
+  });
+
+  $("saveRoster").addEventListener("click", function () {
+    var c = activeClass();
+    var list = parseNames($("rosterText").value);
+    c.students = list;
+    history[c.id] = [];
+    if (pickCount > Math.max(1, list.length)) pickCount = Math.max(1, list.length);
+    save(); refreshAll();
+    $("rosterCount").textContent = list.length + " 人";
+    emptyStage();
+    toast("已保存 " + list.length + " 名学生");
+  });
+
+  $("dedupeRoster").addEventListener("click", function () {
+    $("rosterText").value = parseNames($("rosterText").value).join("\n");
+    $("rosterCount").textContent = parseNames($("rosterText").value).length + " 人";
+  });
+
+  $("clearRoster").addEventListener("click", function () {
+    if (confirm("确定清空当前班级的名单？")) {
+      $("rosterText").value = "";
+      $("rosterCount").textContent = "0 人";
+    }
+  });
+
+  $("exportHtml").addEventListener("click", exportHtml);
+
+  $("exportJson").addEventListener("click", function () {
+    download(JSON.stringify(state, null, 2), "点名数据备份_" + stamp() + ".json", "application/json");
+  });
+
+  $("importJson").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var d = JSON.parse(fr.result);
+        state = normalize(d);
+        save(); refreshAll(); renderClassList(); fillRoster();
+        emptyStage();
+        toast("导入成功：" + state.classes.length + " 个班级");
+      } catch (err) {
+        toast("导入失败：文件格式不正确");
+      }
+    };
+    fr.readAsText(f, "utf-8");
+    e.target.value = "";
+  });
+
+  $("saveSettings").addEventListener("click", function () {
+    state.settings.sound = $("setSound").checked;
+    state.settings.pin = $("setPin").value.trim();
+    save();
+    toast("设置已保存");
+  });
+
+  $("resetAll").addEventListener("click", function () {
+    if (!confirm("将恢复为初始的 901 班名单，当前所有班级数据会被覆盖，确定继续？")) return;
+    state = normalize(readPreset());
+    history = {};
+    save(); refreshAll(); renderClassList(); fillRoster();
+    emptyStage();
+    toast("已恢复默认数据");
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    if (e.code === "Space" || e.key === " ") { e.preventDefault(); if (!$("admin").hidden || !$("pinModal").hidden) return; spin(); }
+    if (e.key === "f" || e.key === "F") $("btnFull").click();
+    if (e.key === "Escape") { $("admin").hidden = true; $("pinModal").hidden = true; }
+  });
+
+  document.addEventListener("click", function (e) {
+    if (e.target.classList && e.target.classList.contains("modal")) {
+      if (e.target.id === "admin") $("admin").hidden = true;
+      if (e.target.id === "pinModal") $("pinModal").hidden = true;
+    }
+  });
+
+  /* ---------------- 启动 ---------------- */
+  if (IS_FILE) $("fileBanner").hidden = false;
+  refreshAll();
+  emptyStage();
+  if (!activeClass().students.length) {
+    $("hint").textContent = "还没有学生，请点击右上角「管理」添加";
+  }
+})();
+</script>
+</body>
+</html>
